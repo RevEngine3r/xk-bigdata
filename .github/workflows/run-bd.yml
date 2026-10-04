@@ -72,11 +72,11 @@ jobs:
 
           git clean -fdx
 
-          if git ls-remote --exit-code --heads origin db > /dev/null 2>&1; then
-            git fetch origin db
-            git checkout db
+          if git ls-remote --exit-code --heads origin bd > /dev/null 2>&1; then
+            git fetch origin bd
+            git checkout bd
           else
-            git checkout --orphan db
+            git checkout --orphan bd
             git rm -rf . > /dev/null 2>&1 || true
           fi
 
@@ -90,5 +90,5 @@ jobs:
             echo "No changes to commit."
           else
             git commit -m "Update results $(date -u +%Y-%m-%dT%H:%M:%SZ)"
-            git push origin db
+            git push origin bd
           fi
