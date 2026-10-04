@@ -43,8 +43,6 @@ jobs:
 
       - name: Create required directories
         run: |
-          mkdir -p db
-          mkdir -p out
           mkdir -p sub
 
       - name: Download and install xray-knife
