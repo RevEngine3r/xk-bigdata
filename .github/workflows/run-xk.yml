@@ -101,7 +101,6 @@ jobs:
             --max-passed 2 \
             --rip \
             --sort \
-            --verbose \
             --type json \
             --out out/results.json
 
@@ -128,6 +127,8 @@ jobs:
           cp sub/g200.txt /tmp/g200.txt
           cp sub/gn200.txt /tmp/gn200.txt
           
+          rm -f sub/g200.txt sub/gn200.txt
+          
           if git ls-remote --exit-code --heads origin xk > /dev/null 2>&1; then
             git fetch origin xk
             git checkout xk
@@ -137,6 +138,7 @@ jobs:
           fi
           
           mkdir -p sub
+          
           cp /tmp/g200.txt sub/g200.txt
           cp /tmp/gn200.txt sub/gn200.txt
           
