@@ -17,14 +17,22 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Checkout specific files from other branch
+      - name: Checkout all.txt from bd branch
         uses: actions/checkout@v4
         with:
           ref: bd
           sparse-checkout: |
-            path/to/folder/file1.txt
-            path/to/folder/file2.txt
-            path/to/folder/file3.txt
+            sub/all.txt
+          sparse-checkout-cone-mode: false
+          path: in
+
+      - name: Checkout g200.txt and gn200.txt from xk branch
+        uses: actions/checkout@v4
+        with:
+          ref: xk
+          sparse-checkout: |
+            sub/g200.txt
+            sub/gn200.txt
           sparse-checkout-cone-mode: false
           path: in
 
@@ -48,40 +56,32 @@ jobs:
           chmod +x ./xray-knife
           ./xray-knife --version || true
 
-      - name: Step 1 - Add subscription URLs
+      - name: Step 1 - Merge subscription files
         run: |
           set -e
-          XRAY_KNIFE="./xray-knife"
-          DB_PATH="db/xk.db"
 
           # ------------------------------------------------------------
-          # Subscription URLs (add / remove as you like)
-          # One URL per line. Lines starting with # are ignored.
+          # Merge all.txt, g200.txt, and gn200.txt into merged.txt
           # ------------------------------------------------------------
-          SUB_URLS=$(cat <<'EOF'
-          https://raw.githubusercontent.com/RevEngine3r/xk-scanner/refs/heads/output/g200.txt
-          https://raw.githubusercontent.com/RevEngine3r/xk-scanner/refs/heads/output/gn200.txt
-          https://raw.githubusercontent.com/RevEngine3r/v2ray-bigdata/refs/heads/output/output/all.txt
-          EOF
-          )
+          echo "Merging subscription files into in/merged.txt..."
 
-          echo "Adding subscriptions to ${DB_PATH}..."
-          COUNT=0
+          # Ensure output dir exists (checkout already creates it, but be safe)
+          mkdir -p in
 
-          while IFS= read -r URL || [ -n "$URL" ]; do
-            # Trim whitespace / carriage returns
-            URL=$(echo "$URL" | tr -d '\r' | xargs)
-            # Skip empty lines and comments
-            if [ -z "$URL" ] || [ "${URL#\#}" != "$URL" ]; then
-              continue
+          # Concatenate files, stripping CR and skipping empty lines
+          : > in/merged.txt
+          for f in in/sub/all.txt in/sub/g200.txt in/sub/gn200.txt; do
+            if [ -f "$f" ]; then
+              echo "Appending: $f"
+              tr -d '\r' < "$f" | sed '/^[[:space:]]*$/d' >> in/merged.txt
+            else
+              echo "Warning: $f not found, skipping."
             fi
-            COUNT=$((COUNT + 1))
-            echo "[${COUNT}] Adding: ${URL}"
-            "${XRAY_KNIFE}" --db "${DB_PATH}" subs add --url "${URL}"
-          done <<< "${SUB_URLS}"
+          done
 
           echo ""
-          echo "Done. All ${COUNT} subscriptions have been processed."
+          echo "Done. Merged file: in/merged.txt"
+          echo "Total lines: $(wc -l < in/merged.txt)"
 
       - name: Step 2 - Fetch all subscriptions
         run: |
@@ -109,7 +109,7 @@ jobs:
           mkdir -p out
 
           "${XRAY_KNIFE}" --db "${DB_PATH}" http \
-            --from-db \
+            --file in/merged.txt \
             --url "https://dl.google.com/android/repository/repository2-4.xml" \
             --dedup-semantic \
             --core auto \
@@ -135,19 +135,19 @@ jobs:
       - name: Step 5 - Publish g200.txt and gn200.txt to output branch
         run: |
           set -e
-
+          
           if [ ! -f "sub/g200.txt" ] || [ ! -f "sub/gn200.txt" ]; then
             echo "Error: expected output files are missing."
             ls -la sub/ || true
             exit 1
           fi
-
+          
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-
+          
           cp sub/g200.txt /tmp/g200.txt
           cp sub/gn200.txt /tmp/gn200.txt
-
+          
           if git ls-remote --exit-code --heads origin xk > /dev/null 2>&1; then
             git fetch origin xk
             git checkout xk
@@ -155,11 +155,12 @@ jobs:
             git checkout --orphan xk
             git rm -rf . > /dev/null 2>&1 || true
           fi
-
-          cp /tmp/g200.txt ./g200.txt
-          cp /tmp/gn200.txt ./gn200.txt
-
-          git add g200.txt gn200.txt
+          
+          mkdir -p sub
+          cp /tmp/g200.txt sub/g200.txt
+          cp /tmp/gn200.txt sub/gn200.txt
+          
+          git add sub/g200.txt sub/gn200.txt
           if git diff --cached --quiet; then
             echo "No changes to commit."
           else
