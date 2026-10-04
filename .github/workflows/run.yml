@@ -129,12 +129,14 @@ jobs:
             --from-db \
             --url "https://dl.google.com/android/repository/repository2-4.xml" \
             --dedup-semantic \
+            --core auto \
             --insecure \
             --threads 50 \
             --mdelay 5000 \
             --retries 2 \
             --rip \
             --sort \
+            --verbose \
             --type json \
             --out out/results.json
 
