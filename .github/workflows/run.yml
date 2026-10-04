@@ -42,7 +42,7 @@ jobs:
           set -e
           XRAY_KNIFE="./xray-knife"
           DB_PATH="db/xk.db"
-          BASE_URL="https://raw.githubusercontent.com/RevEngine3r/v2ray-bigdata/refs/heads/master/output/"
+          BASE_URL="https://raw.githubusercontent.com/RevEngine3r/v2ray-bigdata/refs/heads/output/output/"
           LIST_URL="${BASE_URL}files.txt"
           TEMP_LIST="/tmp/xray_files_list.txt"
 
@@ -51,10 +51,8 @@ jobs:
           # One URL per line. Lines starting with # are ignored.
           # ------------------------------------------------------------
           CUSTOM_URLS=$(cat <<'EOF'
-          # ---- add your custom subscriptions below ----
-          # https://example.com/sub1.txt
-          # https://example.com/sub2.txt
-          # https://raw.githubusercontent.com/someuser/somerepo/main/subs/mysub.txt
+          https://raw.githubusercontent.com/RevEngine3r/xk-scanner/refs/heads/output/g200.txt
+          https://raw.githubusercontent.com/RevEngine3r/xk-scanner/refs/heads/output/gn200.txt
           EOF
           )
 
