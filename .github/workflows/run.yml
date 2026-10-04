@@ -132,7 +132,6 @@ jobs:
             --insecure \
             --threads 50 \
             --mdelay 5000 \
-            --max-passed 2 \
             --retries 2 \
             --rip \
             --sort \
