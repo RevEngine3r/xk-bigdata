@@ -1,0 +1,85 @@
+name: Run BigData Proxy Collector
+
+on:
+  schedule:
+    # Runs every 24 hours at 00:00 UTC
+    - cron: '0 0 * * *'
+  # Allow manual triggering from the Actions tab
+  workflow_dispatch:
+
+# Required so the workflow can push back to the repo
+permissions:
+  contents: write
+
+# Prevent overlapping runs if one is slow
+concurrency:
+  group: proxy-collector
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then
+            pip install -r requirements.txt
+          else
+            pip install requests
+          fi
+
+      - name: Run collector
+        run: python bigdata.py
+
+      - name: Publish to output branch
+        run: |
+          set -e
+
+          if [ ! -d "sub" ]; then
+            echo "Error: expected sub directory is missing."
+            ls -la || true
+            exit 1
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          # Save the generated sub somewhere safe, then remove it so it
+          # doesn't conflict with a branch of the same name
+          rm -rf /tmp/sub
+          cp -r sub /tmp/sub
+          rm -rf sub
+
+          git clean -fdx
+
+          if git ls-remote --exit-code --heads origin db > /dev/null 2>&1; then
+            git fetch origin db
+            git checkout db
+          else
+            git checkout --orphan db
+            git rm -rf . > /dev/null 2>&1 || true
+          fi
+
+          # Replace the contents of the sub dir on the output branch
+          rm -rf sub
+          mkdir -p sub
+          cp -r /tmp/sub/. sub/
+
+          git add -A sub
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+          else
+            git commit -m "Update results $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            git push origin db
+          fi

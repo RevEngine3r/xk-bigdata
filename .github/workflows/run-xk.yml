@@ -17,6 +17,17 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Checkout specific files from other branch
+        uses: actions/checkout@v4
+        with:
+          ref: bd
+          sparse-checkout: |
+            path/to/folder/file1.txt
+            path/to/folder/file2.txt
+            path/to/folder/file3.txt
+          sparse-checkout-cone-mode: false
+          path: in
+
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
@@ -119,7 +130,7 @@ jobs:
       - name: Step 4 - Process results with bigdataer.py
         run: |
           set -e
-          python bigdataer.py
+          python xrayknife.py
 
       - name: Step 5 - Publish g200.txt and gn200.txt to output branch
         run: |
