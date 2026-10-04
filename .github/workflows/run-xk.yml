@@ -24,7 +24,7 @@ jobs:
           sparse-checkout: |
             sub/all.txt
           sparse-checkout-cone-mode: false
-          path: in
+          path: in-bd
 
       - name: Checkout g200.txt and gn200.txt from xk branch
         uses: actions/checkout@v4
@@ -34,7 +34,7 @@ jobs:
             sub/g200.txt
             sub/gn200.txt
           sparse-checkout-cone-mode: false
-          path: in
+          path: in-xk
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -68,7 +68,7 @@ jobs:
 
           # Concatenate files, stripping CR and skipping empty lines
           : > in/merged.txt
-          for f in in/sub/all.txt in/sub/g200.txt in/sub/gn200.txt; do
+          for f in in-bd/sub/all.txt in-xk/sub/g200.txt in-xk/sub/gn200.txt; do
             if [ -f "$f" ]; then
               echo "Appending: $f"
               tr -d '\r' < "$f" | sed '/^[[:space:]]*$/d' >> in/merged.txt
