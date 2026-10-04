@@ -100,6 +100,7 @@ jobs:
             --threads 50 \
             --mdelay 5000 \
             --retries 2 \
+            --max-passed 2 \
             --max-bytes 500000000 \
             --max-links 500000 \
             --rip \
