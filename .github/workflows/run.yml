@@ -1,0 +1,182 @@
+name: Xray-Knife Data Pipeline
+
+on:
+  schedule:
+    # Run every 7 days at 00:00 UTC on Sunday
+    - cron: '0 0 */7 * *'
+  workflow_dispatch: # Allow manual trigger
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-run:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Create required directories
+        run: |
+          mkdir -p db
+          mkdir -p out
+          mkdir -p sub
+
+      - name: Download and install xray-knife
+        run: |
+          wget -q https://github.com/lilendian0x00/xray-knife/releases/download/v11.3.0/Xray-knife-linux-64.zip -O /tmp/xray-knife.zip
+          unzip -o /tmp/xray-knife.zip -d /tmp/xray-knife
+          chmod +x /tmp/xray-knife/xray-knife
+          cp /tmp/xray-knife/xray-knife ./xray-knife
+          chmod +x ./xray-knife
+          ./xray-knife --version || true
+
+      - name: Step 1 - Add subscription URLs
+        run: |
+          set -e
+          XRAY_KNIFE="./xray-knife"
+          DB_PATH="db/xk.db"
+          BASE_URL="https://raw.githubusercontent.com/RevEngine3r/v2ray-bigdata/refs/heads/master/output/"
+          LIST_URL="${BASE_URL}files.txt"
+          TEMP_LIST="/tmp/xray_files_list.txt"
+
+          # ------------------------------------------------------------
+          # Custom subscription URLs (add / remove as you like)
+          # One URL per line. Lines starting with # are ignored.
+          # ------------------------------------------------------------
+          CUSTOM_URLS=$(cat <<'EOF'
+          # ---- add your custom subscriptions below ----
+          # https://example.com/sub1.txt
+          # https://example.com/sub2.txt
+          # https://raw.githubusercontent.com/someuser/somerepo/main/subs/mysub.txt
+          EOF
+          )
+
+          echo "Fetching file list from ${LIST_URL} ..."
+          curl -fsSL "${LIST_URL}" -o "${TEMP_LIST}"
+
+          if [ ! -f "${TEMP_LIST}" ]; then
+            echo "Error: Failed to download the file list."
+            exit 1
+          fi
+
+          echo "Adding subscriptions to ${DB_PATH}..."
+          COUNT=0
+
+          # ---- 1) Base list from RevEngine3r/v2ray-bigdata ----
+          while IFS= read -r FILENAME || [ -n "$FILENAME" ]; do
+            FILENAME=$(echo "$FILENAME" | tr -d '\r' | xargs)
+            if [ -z "$FILENAME" ]; then
+              continue
+            fi
+            COUNT=$((COUNT + 1))
+            echo "[${COUNT}] Adding (base): ${BASE_URL}${FILENAME}"
+            "${XRAY_KNIFE}" --db "${DB_PATH}" subs add --url "${BASE_URL}${FILENAME}"
+          done < "${TEMP_LIST}"
+
+          rm -f "${TEMP_LIST}"
+
+          # ---- 2) Custom list ----
+          echo ""
+          echo "Adding custom subscriptions..."
+          while IFS= read -r URL || [ -n "$URL" ]; do
+            # Trim whitespace / carriage returns
+            URL=$(echo "$URL" | tr -d '\r' | xargs)
+            # Skip empty lines and comments
+            if [ -z "$URL" ] || [ "${URL#\#}" != "$URL" ]; then
+              continue
+            fi
+            COUNT=$((COUNT + 1))
+            echo "[${COUNT}] Adding (custom): ${URL}"
+            "${XRAY_KNIFE}" --db "${DB_PATH}" subs add --url "${URL}"
+          done <<< "${CUSTOM_URLS}"
+
+          echo ""
+          echo "Done. All ${COUNT} subscriptions have been processed."
+
+      - name: Step 2 - Fetch all subscriptions
+        run: |
+          set -e
+          XRAY_KNIFE="./xray-knife"
+          DB_PATH="db/xk.db"
+
+          if [ ! -f "${DB_PATH}" ]; then
+            echo "Error: ${DB_PATH} not found."
+            exit 1
+          fi
+
+          echo "Fetching all subscriptions from ${DB_PATH}..."
+          "${XRAY_KNIFE}" --db "${DB_PATH}" subs fetch --all -o ""
+
+          echo ""
+          echo "Done. All subscriptions have been fetched."
+
+      - name: Step 3 - Run HTTP test
+        run: |
+          set -e
+          XRAY_KNIFE="./xray-knife"
+          DB_PATH="db/xk.db"
+
+          mkdir -p out
+
+          "${XRAY_KNIFE}" --db "${DB_PATH}" http \
+            --from-db \
+            --url "https://dl.google.com/android/repository/repository2-4.xml" \
+            --dedup-semantic \
+            --insecure \
+            --threads 50 \
+            --mdelay 5000 \
+            --max-passed 2 \
+            --retries 2 \
+            --rip \
+            --sort \
+            --type json \
+            --out out/results.json
+
+          echo "Done."
+
+      - name: Step 4 - Process results with bigdataer.py
+        run: |
+          set -e
+          python bigdataer.py
+
+      - name: Step 5 - Publish g200.txt and gn200.txt to output branch
+        run: |
+          set -e
+
+          if [ ! -f "sub/g200.txt" ] || [ ! -f "sub/gn200.txt" ]; then
+            echo "Error: expected output files are missing."
+            ls -la sub/ || true
+            exit 1
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          cp sub/g200.txt /tmp/g200.txt
+          cp sub/gn200.txt /tmp/gn200.txt
+
+          if git ls-remote --exit-code --heads origin output > /dev/null 2>&1; then
+            git fetch origin output
+            git checkout output
+          else
+            git checkout --orphan output
+            git rm -rf . > /dev/null 2>&1 || true
+          fi
+
+          cp /tmp/g200.txt ./g200.txt
+          cp /tmp/gn200.txt ./gn200.txt
+
+          git add g200.txt gn200.txt
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+          else
+            git commit -m "Update results $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            git push origin output
+          fi
