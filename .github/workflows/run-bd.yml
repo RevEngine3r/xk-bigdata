@@ -24,6 +24,15 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Checkout specific files from other branch
+        uses: actions/checkout@v4
+        with:
+          ref: bd
+          sparse-checkout: |
+            sub/all.txt
+          sparse-checkout-cone-mode: false
+          path: in
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:

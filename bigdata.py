@@ -139,6 +139,10 @@ def main():
         print(f"[*] {url}: {len(formatted)} lines (target={target or 'original'})")
         merged.extend(formatted)
 
+    history = pl.Path('in/all.txt').read_text().splitlines()
+    print(f"[*] History: {len(history)}")
+    merged.extend(history)
+
     print(f"[*] Total: {len(merged)}")
     merged = list(set(merged))
 
