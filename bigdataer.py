@@ -2,7 +2,7 @@ import json
 import os
 
 # ---------- CONFIG ----------
-INPUT_JSON = r"out\results.json"
+INPUT_JSON = "out/results.json"
 OUTPUT_DIR = "sub"
 OUTPUT_200 = "g200.txt"
 OUTPUT_NOT_200 = "gn200.txt"
