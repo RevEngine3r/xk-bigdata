@@ -98,7 +98,6 @@ jobs:
             --threads 50 \
             --mdelay 5000 \
             --retries 2 \
-            --max-passed 2 \
             --rip \
             --sort \
             --type json \
