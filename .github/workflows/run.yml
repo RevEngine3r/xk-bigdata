@@ -42,47 +42,21 @@ jobs:
           set -e
           XRAY_KNIFE="./xray-knife"
           DB_PATH="db/xk.db"
-          BASE_URL="https://raw.githubusercontent.com/RevEngine3r/v2ray-bigdata/refs/heads/output/output/"
-          LIST_URL="${BASE_URL}files.txt"
-          TEMP_LIST="/tmp/xray_files_list.txt"
 
           # ------------------------------------------------------------
-          # Custom subscription URLs (add / remove as you like)
+          # Subscription URLs (add / remove as you like)
           # One URL per line. Lines starting with # are ignored.
           # ------------------------------------------------------------
-          CUSTOM_URLS=$(cat <<'EOF'
+          SUB_URLS=$(cat <<'EOF'
           https://raw.githubusercontent.com/RevEngine3r/xk-scanner/refs/heads/output/g200.txt
           https://raw.githubusercontent.com/RevEngine3r/xk-scanner/refs/heads/output/gn200.txt
+          https://raw.githubusercontent.com/RevEngine3r/v2ray-bigdata/refs/heads/output/output/all.txt
           EOF
           )
-
-          echo "Fetching file list from ${LIST_URL} ..."
-          curl -fsSL "${LIST_URL}" -o "${TEMP_LIST}"
-
-          if [ ! -f "${TEMP_LIST}" ]; then
-            echo "Error: Failed to download the file list."
-            exit 1
-          fi
 
           echo "Adding subscriptions to ${DB_PATH}..."
           COUNT=0
 
-          # ---- 1) Base list from RevEngine3r/v2ray-bigdata ----
-          while IFS= read -r FILENAME || [ -n "$FILENAME" ]; do
-            FILENAME=$(echo "$FILENAME" | tr -d '\r' | xargs)
-            if [ -z "$FILENAME" ]; then
-              continue
-            fi
-            COUNT=$((COUNT + 1))
-            echo "[${COUNT}] Adding (base): ${BASE_URL}${FILENAME}"
-            "${XRAY_KNIFE}" --db "${DB_PATH}" subs add --url "${BASE_URL}${FILENAME}"
-          done < "${TEMP_LIST}"
-
-          rm -f "${TEMP_LIST}"
-
-          # ---- 2) Custom list ----
-          echo ""
-          echo "Adding custom subscriptions..."
           while IFS= read -r URL || [ -n "$URL" ]; do
             # Trim whitespace / carriage returns
             URL=$(echo "$URL" | tr -d '\r' | xargs)
@@ -91,9 +65,9 @@ jobs:
               continue
             fi
             COUNT=$((COUNT + 1))
-            echo "[${COUNT}] Adding (custom): ${URL}"
+            echo "[${COUNT}] Adding: ${URL}"
             "${XRAY_KNIFE}" --db "${DB_PATH}" subs add --url "${URL}"
-          done <<< "${CUSTOM_URLS}"
+          done <<< "${SUB_URLS}"
 
           echo ""
           echo "Done. All ${COUNT} subscriptions have been processed."
@@ -132,6 +106,8 @@ jobs:
             --threads 50 \
             --mdelay 5000 \
             --retries 2 \
+            --max-bytes 500000000 \
+            --max-links 500000 \
             --rip \
             --sort \
             --verbose \
