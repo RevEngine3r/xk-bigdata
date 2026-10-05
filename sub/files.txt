@@ -13,3 +13,12 @@ configs_012.txt
 configs_013.txt
 configs_014.txt
 configs_015.txt
+configs_016.txt
+configs_017.txt
+configs_018.txt
+configs_019.txt
+configs_020.txt
+configs_021.txt
+configs_022.txt
+configs_023.txt
+configs_024.txt
