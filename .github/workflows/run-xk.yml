@@ -105,29 +105,41 @@ jobs:
 
           echo "Done."
 
-      - name: Step 3 - Process results with bigdataer.py
+      - name: Step 3 - Process results with xrayknife.py
         run: |
           set -e
           python xrayknife.py
 
-      - name: Step 4 - Publish g200.txt and gn200.txt to output branch
+      - name: Step 4 - Publish sub dir
         run: |
           set -e
           
-          if [ ! -f "sub/g200.txt" ] || [ ! -f "sub/gn200.txt" ]; then
-            echo "Error: expected output files are missing."
-            ls -la sub/ || true
-            exit 1
-          fi
+          # List of files (relative paths) to publish
+          FILES=(
+            "sub/g200.txt"
+            "sub/gn200.txt"
+          )
+          
+          # Verify all expected files exist
+          for f in "${FILES[@]}"; do
+            if [ ! -f "$f" ]; then
+              echo "Error: expected output file is missing: $f"
+              ls -la sub/ || true
+              exit 1
+            fi
+          done
           
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           
-          cp sub/g200.txt /tmp/g200.txt
-          cp sub/gn200.txt /tmp/gn200.txt
+          # Stash files to /tmp, then remove from working tree
+          TMPDIR_STAGE="$(mktemp -d)"
+          for f in "${FILES[@]}"; do
+            cp "$f" "$TMPDIR_STAGE/$(basename "$f")"
+          done
+          rm -f "${FILES[@]}"
           
-          rm -f sub/g200.txt sub/gn200.txt
-          
+          # Switch to (or create) the output branch
           if git ls-remote --exit-code --heads origin xk > /dev/null 2>&1; then
             git fetch origin xk
             git checkout xk
@@ -138,10 +150,12 @@ jobs:
           
           mkdir -p sub
           
-          cp /tmp/g200.txt sub/g200.txt
-          cp /tmp/gn200.txt sub/gn200.txt
+          # Restore files into the branch
+          for f in "${FILES[@]}"; do
+            cp "$TMPDIR_STAGE/$(basename "$f")" "$f"
+          done
           
-          git add sub/g200.txt sub/gn200.txt
+          git add "${FILES[@]}"
           if git diff --cached --quiet; then
             echo "No changes to commit."
           else

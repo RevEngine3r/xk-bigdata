@@ -60,7 +60,9 @@ def ensure_dir(path):
         os.makedirs(path, exist_ok=True)
 
 
-def write_links(links, path):
+def write_links(links, path, top_n=None):
+    if top_n is not None:
+        links = links[:top_n]
     with open(path, "w", encoding="utf-8") as f:
         for link in links:
             f.write(link + "\n")
@@ -97,8 +99,13 @@ def main():
 
     write_links([link for _, link in ok_links],
                 os.path.join(OUTPUT_DIR, OUTPUT_200))
+    write_links([link for _, link in ok_links],
+                os.path.join(OUTPUT_DIR, OUTPUT_200), top_n=50)
+
     write_links([link for _, link in bad_links],
                 os.path.join(OUTPUT_DIR, OUTPUT_NOT_200))
+    write_links([link for _, link in bad_links],
+                os.path.join(OUTPUT_DIR, OUTPUT_NOT_200), top_n=50)
 
 
 if __name__ == "__main__":
