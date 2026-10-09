@@ -7,7 +7,9 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 import requests
 
 import config
-import formatters  # noqa: F401  (registers all formatters on import)
+import formatters
+
+import semantic_deduplicate
 
 
 def parse_link_spec(entry):
@@ -144,14 +146,10 @@ def main():
     merged.extend(history)
 
     print(f"[*] Total: {len(merged)}")
-    merged = list(set(merged))
 
-    print(f"[*] Deduplicated.")
+    merged = semantic_deduplicate.semantic_deduplicate(merged, keep='first', drop_invalid=True)
+    print(f"[*] Deduplicated: {len(merged)}")
 
-    merged = [item for item in merged if '://' in item]
-    print(f"[*] Cleaned.")
-
-    print(f"[*] Total Dedup: {len(merged)}")
     write_split(merged, config.OUTPUT_DIR, config.MAX_LINES_PER_FILE)
 
     (pl.Path(config.OUTPUT_DIR) / "all.txt").write_text("\n".join(merged))
