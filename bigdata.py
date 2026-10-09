@@ -147,8 +147,8 @@ def main():
 
     print(f"[*] Total: {len(merged)}")
 
-    merged = semantic_deduplicate.semantic_deduplicate(merged, keep='first', drop_invalid=True)
-    print(f"[*] Deduplicated: {len(merged)}")
+    merged, dup = semantic_deduplicate.semantic_deduplicate(merged, keep='first', drop_invalid=True)
+    print(f"[*] Deduplicated: {len(merged) + len(dup)} -> {len(merged)}")
 
     write_split(merged, config.OUTPUT_DIR, config.MAX_LINES_PER_FILE)
 
