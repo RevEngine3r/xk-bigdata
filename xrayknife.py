@@ -61,10 +61,8 @@ def ensure_dir(path):
 
 
 def write_links(links, path, top_n=None):
-    if top_n is not None:
-        links = links[:top_n]
     with open(path, "w", encoding="utf-8") as f:
-        for link in links:
+        for link in links[:top_n]:
             f.write(link + "\n")
     print(f"Wrote {len(links)} links to {path}")
 
