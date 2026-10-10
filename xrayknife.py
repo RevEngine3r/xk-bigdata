@@ -5,8 +5,11 @@ import os
 INPUT_JSON = "out/results.json"
 OUTPUT_DIR = "sub"
 OUTPUT_200 = "g200.txt"
+OUTPUT_200_L = "g200_lite.txt"
 OUTPUT_NOT_200 = "gn200.txt"
+OUTPUT_NOT_200_L = "gn200_lite.txt"
 MAX_DELAY = 3000  # max delay (ms) allowed in output files
+LITE_TOP_N = 100
 
 
 # ----------------------------
@@ -97,13 +100,15 @@ def main():
 
     write_links([link for _, link in ok_links],
                 os.path.join(OUTPUT_DIR, OUTPUT_200))
+
     write_links([link for _, link in ok_links],
-                os.path.join(OUTPUT_DIR, OUTPUT_200), top_n=50)
+                os.path.join(OUTPUT_DIR, OUTPUT_200_L), top_n=LITE_TOP_N)
 
     write_links([link for _, link in bad_links],
                 os.path.join(OUTPUT_DIR, OUTPUT_NOT_200))
+
     write_links([link for _, link in bad_links],
-                os.path.join(OUTPUT_DIR, OUTPUT_NOT_200), top_n=50)
+                os.path.join(OUTPUT_DIR, OUTPUT_NOT_200_L), top_n=LITE_TOP_N)
 
 
 if __name__ == "__main__":

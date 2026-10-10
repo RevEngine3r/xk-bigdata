@@ -117,7 +117,9 @@ jobs:
           # List of files (relative paths) to publish
           FILES=(
             "sub/g200.txt"
+            "sub/g200_lite.txt"
             "sub/gn200.txt"
+            "sub/gn200_lite.txt"
           )
           
           # Verify all expected files exist
