@@ -1,6 +1,8 @@
 import json
 import os
 
+import resolver
+
 # ---------- CONFIG ----------
 INPUT_JSON = "out/results.json"
 OUTPUT_DIR = "sub"
@@ -98,16 +100,27 @@ def main():
     ok_links.sort(key=lambda x: x[0])
     bad_links.sort(key=lambda x: x[0])
 
-    write_links([link for _, link in ok_links],
+    ok_links = [link for _, link in ok_links]
+    bad_links = [link for _, link in bad_links]
+
+    fmt = lambda s: " | ".join(f"{k}={v}" for k, v in s.items())
+
+    ok_links, status = resolver.resolve_lines(ok_links, family='any')
+    print("OK:", fmt(status))
+
+    bad_links, status = resolver.resolve_lines(bad_links, family='any')
+    print("BAD:", fmt(status))
+
+    write_links(ok_links,
                 os.path.join(OUTPUT_DIR, OUTPUT_200))
 
-    write_links([link for _, link in ok_links],
+    write_links(ok_links,
                 os.path.join(OUTPUT_DIR, OUTPUT_200_L), top_n=LITE_TOP_N)
 
-    write_links([link for _, link in bad_links],
+    write_links(bad_links,
                 os.path.join(OUTPUT_DIR, OUTPUT_NOT_200))
 
-    write_links([link for _, link in bad_links],
+    write_links(bad_links,
                 os.path.join(OUTPUT_DIR, OUTPUT_NOT_200_L), top_n=LITE_TOP_N)
 
 
