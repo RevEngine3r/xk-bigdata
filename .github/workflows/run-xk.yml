@@ -95,9 +95,9 @@ jobs:
             --dedup-semantic \
             --core auto \
             --insecure \
-            --threads 50 \
-            --mdelay 5000 \
-            --retries 2 \
+            --threads 100 \
+            --mdelay 3000 \
+            --retries 1 \
             --rip \
             --sort \
             --type json \
